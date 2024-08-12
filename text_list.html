@@ -1,0 +1,616 @@
+<!doctype html>
+<html>
+<head><title>to do list</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+    body {
+        overflow-y: scroll;
+        overflow-x: hidden;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        padding-top: 50px;
+        font-family: Arial, sans-serif;
+        background-color: #ffffff; /* Light mode background */
+        color: #000000; /* Light mode font color */
+        transition: background-color 0.3s, color 0.3s;
+        position: relative;
+    }
+
+    .dark-mode {
+        background-color: #121212; /* Dark mode background */
+        color: #e0e0e0; /* Dark mode font color */
+    }
+
+    #darkModeToggle {
+    position: fixed; /* Changed from absolute to fixed */
+    top: 20px;
+    right: 20px;
+    z-index: 1000; /* Ensures it stays on top of other elements */
+    padding: 10px 20px;
+    font-size: 14px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    background-color: #007BFF;
+    color: white;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+@media (max-width: 768px) {
+    #darkModeToggle {
+        top: 10px;
+        right: 10px;
+        padding: 8px 16px;
+        font-size: 12px;
+    }
+}
+
+    .dark-mode #darkModeToggle {
+        background-color: #0056b3;
+    }
+
+    #form {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 70%;
+        max-width: 400px;
+        border: 1px solid #ccc;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        background-color: #f9f9f9;
+        margin-bottom: 20px;
+        transition: background-color 0.3s, color 0.3s;
+    }
+
+    .dark-mode #form {
+        background-color: #1e1e1e;
+        border-color: #333;
+    }
+
+    #userInput, #userInput2 {
+        width: 100%;
+        margin-bottom: 15px;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 16px;
+        box-sizing: border-box; /* Ensures padding and border are included in width */
+    }
+
+    #userInput {
+        height: 40px;
+    }
+
+    #userInput2 {
+        height: 80px;
+    }
+
+    .button-container {
+        display: flex;
+        justify-content: space-between;
+        width: 100%;
+    }
+
+    #subButton, #clearButton, #clearAllButton {
+        padding: 15px;
+        font-size: 18px;
+        border: none;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+
+    #subButton {
+        width: 48%;
+        background-color: #007BFF;
+        color: white;
+    }
+
+    #subButton:hover {
+        background-color: #0056b3;
+    }
+
+    #clearButton {
+        width: 48%;
+        background-color: #DC143C;
+        color: white;
+    }
+
+    #clearButton:hover {
+        background-color: #F4A460;
+    }
+
+    #clearAllButton {
+        width: 25%;
+        background-color: #FF6347;
+        color: white;
+    }
+
+    #clearAllButton:hover {
+        background-color: #FF4500;
+    }
+
+    /* Responsive Button Styles */
+    @media (max-width: 768px) {
+        .button-container {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            align-items: stretch; /* Ensure buttons take full width */
+        }
+        #subButton, #clearButton,{
+            width: 100%; /* Full width for buttons */
+            margin-bottom: 10px; /* Space between buttons */
+            font-size: 16px; /* Adjust font size */
+            padding: 12px; /* Adjust padding */
+        }
+        #clearAllButton {
+            width: 65%; /* Full width for buttons */
+            margin-bottom: 10px; /* Space between buttons */
+            font-size: 16px; /* Adjust font size */
+            padding: 12px; /* Adjust padding */
+        }
+    }
+
+    @media (max-width: 576px) {
+        #subButton, #clearButton, #clearAllButton {
+            font-size: 14px; /* Further adjust font size */
+            padding: 10px; /* Further adjust padding */
+        }
+    }
+
+    #taskList {
+        width: 70%;
+        max-width: 1000px;
+        margin-top: 20px;
+    }
+     .task-box {
+    width: 100%;
+    max-width: 1000px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: 18px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    background-color: #fff;
+    overflow: hidden; /* Ensures content does not overflow */
+    display: flex; /* Flexbox for layout */
+    flex-wrap: wrap; /* Allow items to wrap */
+    align-items: flex-start; /* Align items at the top */
+    transition: background-color 0.3s, border-color 0.3s;
+    }
+
+    .task-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column; /* Stack title and description */
+    justify-content: flex-start; /* Align task title to the left */
+    }
+
+    .task-title-container {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 10px; /* Space between title and description */
+    justify-content: flex-start; /* Align task title to the left */
+    margin-left: 10px; /* Add some space to the left if needed */
+    }
+
+    .task-title {
+    font-weight: bold;
+    font-size: 18px;
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    padding: 15px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    text-align: left;
+    word-wrap: break-word; /* Breaks long words to fit within box */
+    max-width: 100%; /* Adjust to fit within container */
+    overflow-wrap: break-word; /* Breaks long words */
+    overflow: hidden; /* Ensures that content does not overflow */
+    text-overflow: ellipsis; /* Adds ellipsis for overflowed text */
+    transition: background-color 0.3s, border-color 0.3s;
+    }
+
+    .task-desc-container {
+    display: flex;
+    flex-direction: column;
+    flex: 2;
+    }
+
+    .task-desc {
+    font-size: 16px;
+    color: #555;
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    padding: 15px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    max-height: 100px; /* Set a maximum height */
+    overflow-y: auto; /* Scrollbar for overflow content */
+    word-wrap: break-word; /* Breaks long words to fit within box */
+    max-width: 100%; /* Adjust to fit within container */
+    overflow-wrap: break-word; /* Breaks long words */
+    text-overflow: ellipsis; /* Adds ellipsis for overflowed text */
+    transition: background-color 0.3s, color 0.3s;
+    }
+
+    .task-actions {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    margin-left: 20px; /* Space between task content and actions */
+    }
+
+    body.dark-mode .task-box {
+    background-color: #2c2c2c; /* Dark mode background */
+    border-color: #444; /* Dark mode border */
+    color: #ddd; /* Light text color for dark mode */
+    }
+
+    body.dark-mode .task-title {
+    background-color: #333; /* Dark mode background for task title */
+    border-color: #555; /* Dark mode border for task title */
+    color: #ddd; /* Light text color */
+    }
+
+    body.dark-mode .task-desc {
+    background-color: #444; /* Dark mode background for task description */
+    color: #ddd; /* Light text color */
+    border-color: #555; /* Dark mode border for task description */
+    }
+
+    body.dark-mode .task-actions .edit-button {
+    background-color: #ffb300; /* Dark mode color for edit button */
+    }
+
+    body.dark-mode .task-actions .delete-button {
+    background-color: #c8102e; /* Dark mode color for delete button */
+    }
+
+
+    @media (max-width: 768px) {
+    .task-box {
+        flex-direction: column; /* Stack items vertically on smaller screens */
+        align-items: stretch; /* Stretch items to full width */
+    }
+
+    .task-actions {
+        margin-left: 0; /* Remove margin for stacking */
+        margin-top: 10px; /* Add space above actions */
+    }
+    }
+
+    .task-action-button {
+        margin-bottom: 10px;
+        padding: 10px;
+        font-size: 14px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+
+    .edit-button {
+        background-color: #FFC107; /* Yellow color */
+        color: #000;
+    }
+
+    .delete-button {
+        background-color: #DC143C; /* Red color */
+        color: #fff;
+    }
+
+    .dark-mode .edit-button {
+        background-color: #ffb300; /* Darker yellow for dark mode */
+    }
+
+    .dark-mode .delete-button {
+        background-color: #c8102e; /* Darker red for dark mode */
+    }
+
+    .task-actions .edit-button:hover {
+        background-color: #ffb300; /* Darker yellow */
+    }
+
+    .task-actions .delete-button:hover {
+        background-color: #c8102e; /* Darker red */
+    }
+
+    .serial-number {
+        font-size: 18px;
+        font-weight: bold;
+        margin-right: 15px; /* Space between serial number and task title */
+        text-align: center; /* Center text horizontally */
+        flex-shrink: 0; /* Prevent shrinking */
+        min-width: 30px; /* Ensure enough space for serial number */
+    }
+
+    .modal {
+        display: none; /* Hidden by default */
+        position: fixed; /* Stay in place */
+        z-index: 1; /* Sit on top */
+        left: 0;
+        top: 0;
+        width: 100%; /* Full width */
+        height: 100%; /* Full height */
+        overflow: auto; /* Enable scroll if needed */
+        background-color: rgba(0, 0, 0, 0.4); /* Black with opacity */
+    }
+
+    .dark-mode .modal {
+        background-color: rgba(0, 0, 0, 0.8); /* Darker overlay */
+    }
+
+    .modal-content {
+        background-color: #fff;
+        margin: 15% auto;
+        padding: 20px;
+        border: 1px solid #888;
+        width: 80%; /* Could be more or less, depending on screen size */
+        max-width: 500px;
+        border-radius: 10px;
+    }
+
+    .modal-content.dark-mode {
+        background-color: #444;
+        color: #ddd;
+        border-color: #555;
+    }
+
+    .close-button {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+    }
+
+    .close-button:hover,
+    .close-button:focus {
+        color: black;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    #editTask, #editDescription {
+        width: 100%;
+        margin-bottom: 15px;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+    }
+
+    .dark-mode #editTask, .dark-mode #editDescription {
+        background-color: #555;
+        color: #ddd;
+        border-color: #777;
+    }
+
+    #saveEditButton {
+        padding: 10px 20px;
+        font-size: 16px;
+        background-color: #007BFF;
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+    #saveEditButton:hover {
+        background-color: #0056b3;
+    }
+</style>
+</head>
+<body>
+    <button id="darkModeToggle" onclick="toggleDarkMode()">Dark Mode</button>
+    <form id="form" method="POST" onsubmit="return handleFormSubmit(event);">
+        <label for="task">Task:</label>
+        <input type="text" id="userInput" name="userInput" placeholder="Enter your task here">
+        <label for="description">Description:</label>
+        <textarea id="userInput2" name="userInput2" placeholder="Enter the description here"></textarea>
+        <div class="button-container">
+            <button type="submit" id="subButton">Add</button>
+            <button type="reset" id="clearButton">Clear</button>
+        </div>
+    </form>
+    <button id="clearAllButton" onclick="clearAllTasks()">Clear All Tasks</button>
+    <div id="taskList">
+    {% for task in tasks %}
+        <div class="task-box">
+            <div class="task-content">
+                <div class="serial-number">{{ loop.index }}.</div>
+                <div class="task-title-container">
+                    <div class="task-title">{{ task[1] }}</div>
+                </div>
+                <div class="task-desc-container">
+                    <div class="task-desc">{{ task[2] }}</div>
+                </div>
+            </div>
+            <div class="task-actions">
+                <button class="task-action-button edit-button" data-task-id="{{ task[0] }}" data-task="{{ task[1] }}" data-description="{{ task[2] }}">Edit</button>
+                <button class="task-action-button delete-button" data-task-id="{{ task[0] }}">Delete</button>
+            </div>
+        </div>
+    {% endfor %}
+    </div>
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h2>Edit Task</h2>
+            <form id="editForm">
+                <input type="hidden" id="editTaskId" name="taskId">
+                <label for="editTask">Task:</label>
+                <input type="text" id="editTask" name="task" placeholder="Enter new task here">
+                <label for="editDescription">Description:</label>
+                <textarea id="editDescription" name="description" placeholder="Enter new description here"></textarea>
+                <button type="submit" id="saveEditButton">Save</button>
+            </form>
+        </div>
+    </div>
+    <script>
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            var button = document.getElementById('darkModeToggle');
+            if (document.body.classList.contains('dark-mode')) {
+                button.textContent = 'Light Mode';
+                localStorage.setItem('darkMode', 'enabled');
+            } else {
+                button.textContent = 'Dark Mode';
+                localStorage.setItem('darkMode', 'disabled');
+            }
+        }
+
+        function loadDarkModePreference() {
+            if (localStorage.getItem('darkMode') === 'enabled') {
+                document.body.classList.add('dark-mode');
+                document.getElementById('darkModeToggle').textContent = 'Light Mode';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadDarkModePreference);
+
+        function handleFormSubmit(event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            const data = {
+                userInput: formData.get('userInput'),
+                userInput2: formData.get('userInput2')
+            };
+            fetch('/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Failed to add task.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while adding the task.');
+            });
+            return false;
+        }
+
+        function clearAllTasks() {
+            fetch('/clear_all', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Failed to clear tasks.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while clearing tasks.');
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.delete-button').forEach(function(button) {
+                button.addEventListener('click', function() {
+                    const taskId = this.dataset.taskId;
+                    fetch(`/delete_task/${taskId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            location.reload();
+                        } else {
+                            alert('Failed to delete task.');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('An error occurred while deleting the task.');
+                    });
+                });
+            });
+
+            var modal = document.getElementById('editModal');
+            var closeButton = document.querySelector('.close-button');
+            var editForm = document.getElementById('editForm');
+
+           document.querySelectorAll('.edit-button').forEach(function(button) {
+    button.addEventListener('click', function() {
+        const taskId = this.dataset.taskId;
+        fetch(`/get_task/${taskId}`)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('editTask').value = data.task;
+                document.getElementById('editDescription').value = data.description;
+                document.getElementById('editTaskId').value = taskId;
+                modal.style.display = "block"; // Show the modal
+
+                // Apply dark mode to modal if needed
+                if (document.body.classList.contains('dark-mode')) {
+                    modal.classList.add('dark-mode');
+                    document.querySelector('.modal-content').classList.add('dark-mode'); // Ensure modal content has dark mode
+                } else {
+                    modal.classList.remove('dark-mode');
+                    document.querySelector('.modal-content').classList.remove('dark-mode'); // Remove dark mode if not enabled
+                }
+            });
+            });
+            });
+
+
+            closeButton.addEventListener('click', function() {
+                modal.style.display = "none"; // Hide the modal
+            });
+
+            window.onclick = function(event) {
+                if (event.target == modal) {
+                    modal.style.display = "none"; // Hide the modal if clicked outside
+                }
+            };
+
+            editForm.addEventListener('submit', function(event) {
+                event.preventDefault();
+                const taskId = document.getElementById('editTaskId').value;
+                const task = document.getElementById('editTask').value;
+                const description = document.getElementById('editDescription').value;
+
+                fetch('/edit_task', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ index: taskId, task: task, description: description })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Failed to edit task.');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
