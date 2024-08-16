@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Register</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            text-align: center;
+            background-color: #83ebf0;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .input {
+        text-align: center;
+        background-color: #dae3e1ef;
+        max-width: 150;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        #username, #password {
+        width: 100%;
+        margin-bottom: 15px;
+        padding: 10px;
+        border: 1px solid #e81111;
+        border-radius: 5px;
+        font-size: 16px;
+        box-sizing: border-box; /* Ensures padding and border are included in width */
+        }
+        h1 {
+            margin-bottom: 20px;
+            color: #ef5e8cef;
+        }
+        #button1 {
+            display: inline-block;
+            margin: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            color: #fff;
+            background-color: #00ffc3;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+            
+        #button2:hover {
+        background-color: #b30089e5;
+        }
+
+
+        #button2 {
+            position: fixed; /* Changed from absolute to fixed */
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: inline-block;
+            margin: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            color: #fff;
+            background-color: #ff00bf;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+            
+        #button1:hover {
+        background-color: #60f471c3;
+        }
+    </style>
+</head>
+<body>
+    
+    <form method="post">
+        <div class="container">
+            <h1>Register</h1>
+        <div class="input">
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username" required><br>
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required><br>
+        </div>
+        <button type="submit" id="button1">Register</button>
+        </div>
+    </form>
+    <p><a href="{{ url_for('login') }}" id="button2">Login</a></p>
+</body>
+</html>
