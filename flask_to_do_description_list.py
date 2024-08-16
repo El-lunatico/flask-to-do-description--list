@@ -1,296 +1,183 @@
-from flask import Flask, render_template_string, request
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for,flash
+from werkzeug.security import generate_password_hash, check_password_hash
+import sqlite3
+import qrcode
+import socket
 
 app = Flask(__name__)
-# open a file in append mode
-# if the file is empty then initialize listA and listB
-listA = []
-listB = []
-# if the file is not empty
-# load listA and listB from the file
-@app.route('/')
-def text_list():
-    return render_template_string('''
-    <!doctype html>
-    <html>
-    <head>
-        <style>
-            body {
-                overflow-y: scroll;
-                overflow-x: hidden;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                height: 100vh;
-                margin: 0;
-                padding-top: 50px;
-                font-family: Arial, sans-serif;
-            }
-            #form {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                width: 70%;
-                max-width: 400px;
-                border: 1px solid #ccc;
-                padding: 20px;
-                border-radius: 10px;
-                box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-                background-color: #f9f9f9;
-                margin-bottom: 20px;
-            }
-            #userInput, #userInput2 {
-                width: 100%;
-                margin-bottom: 15px;
-                padding: 10px;
-                border: 1px solid #ccc;
-                border-radius: 5px;
-                font-size: 16px;
-                box-sizing: border-box; /* Ensures padding and border are included in width */
-            }
-            #userInput {
-                height: 40px;
-            }
-            #userInput2 {
-                height: 80px;
-            }
-            #subButton {
-                width: 50%;
-                padding: 10px;
-                font-size: 16px;
-                background-color: #007BFF;
-                color: white;
-                border: none;
-                border-radius: 5px;
-                cursor: pointer;
-                transition: background-color 0.3s ease;
-            }
-            #subButton:hover {
-                background-color: #0056b3;
-            }
-            .task-box {
-                width: 70%;
-                max-width: 800px; /* Adjusted to allow more space for content */
-                border: 1px solid #ccc;
-                border-radius: 10px;
-                padding: 10px;
-                margin-bottom: 15px;
-                box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-                background-color: #fff;
-                overflow: hidden; /* Ensures content does not overflow */
-            }
-            .task-container {
-                display: flex;
-                align-items: flex-start; /* Align items to the top */
-            }
-            .task-title-container {
-                flex: 1;
-                display: flex;
-                justify-content: flex-end;
-                margin-right: 10px; /* Space between task and description */
-            }
-            .task-title {
-                font-weight: bold;
-                font-size: 18px;
-                background-color: #f0f0f0;
-                border: 1px solid #ccc;
-                border-radius: 10px;
-                padding: 15px;
-                box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-                text-align: right;
-                word-wrap: break-word; /* Breaks long words to fit within box */
-                max-width: 300px; /* Set a maximum width */
-                overflow-wrap: break-word; /* Breaks long words */
-            }
-            .task-desc-container {
-                flex: 2;
-                display: flex;
-                flex-direction: column;
-            }
-            .task-desc {
-                font-size: 16px;
-                color: #555;
-                background-color: #f0f0f0;
-                border: 1px solid #ccc;
-                border-radius: 10px;
-                padding: 15px;
-                box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-                max-height: 100px; /* Set a maximum height */
-                overflow-y: auto; /* Scrollbar for overflow content */
-                word-wrap: break-word; /* Breaks long words to fit within box */
-            }
-        </style>
-    </head>
-    <body>
-        <form id="form" method="POST">
-            <label for="task">Task:</label>
-            <input type="text" id="userInput" name="userInput" placeholder="Enter your task here">
-            <label for="description">Description:</label>
-            <textarea id="userInput2" name="userInput2" placeholder="Enter the description here"></textarea>
-            <button type="submit" id="subButton">Add</button>
-        </form>
-        <div id="taskList">
-            {% for task, description in zip(listA, listB) %}
-                <div class="task-box">
-                    <div class="task-container">
-                        <div class="task-title-container">
-                            <div class="task-title">{{ task }}</div>
-                        </div>
-                        <div class="task-desc-container">
-                            <div class="task-desc">{{ description }}</div>
-                        </div>
-                    </div>
-                </div>
-            {% endfor %}
-        </div>
-    </body>
-    </html>
+app.secret_key = 'your_secret_key'
+def get_ip():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.settimeout(0)
+    try:
+        s.connect(("8.8.8.8", 80))
+        ip=s.getsockname()[0]
+    except Exception:
+        ip = '127.0.0.1'
+
+    return ip
+
+def init_sqlite_db():
+    conn = sqlite3.connect("database.db")
+    conn.execute('CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY, username TEXT UNIQUE, password TEXT)')
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS task(
+            id INTEGER PRIMARY KEY, 
+            title TEXT, 
+            description TEXT, 
+            user_id INTEGER,
+            FOREIGN KEY(user_id) REFERENCES users(id)
+        )
     ''')
+    conn.close()
+init_sqlite_db()
+
+
+
+@app.route('/')
+def index():
+
+    return render_template('index.html')
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        hashed_password = generate_password_hash(password)
+
+        with sqlite3.connect('database.db') as con:
+            cur = con.cursor()
+            try:
+                cur.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, hashed_password))
+                con.commit()
+                return redirect(url_for('login'))
+            except sqlite3.IntegrityError:
+                return  redirect(url_for('index'))
+    return render_template('register.html')
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    error = None
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+
+        with sqlite3.connect('database.db') as con:
+            cur = con.cursor()
+            cur.execute("SELECT id, password FROM users WHERE username = ?", (username,))
+            user = cur.fetchone()
+
+            if user and check_password_hash(user[1], password):
+                session['username'] = username
+                session['user_id'] = user[0]
+                return redirect(url_for('text_list'))
+            else:
+                redirect(url_for('index'))
+                error = "Your ID or password is wrong"
+
+    return render_template('login.html', error=error)
+
+@app.route('/logout')
+def logout():
+    session.pop('username', None)
+    session.pop('user_id', None)
+    return redirect(url_for('login'))
+
+@app.route('/task')
+def text_list():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+
+    user_id = session['user_id']
+    with sqlite3.connect('database.db') as con:
+        cur = con.cursor()
+        cur.execute("SELECT id, title, description FROM task WHERE user_id = ? ORDER BY id DESC", (user_id,))
+        tasks = cur.fetchall()
+    return render_template("text_list.html", tasks=tasks)
 
 @app.route('/', methods=['POST'])
-def view():
-    text = request.form['userInput']
-    listA.append(text)
-    text2 = request.form['userInput2']
-    listB.append(text2)
-    # append lists in file
-    strTemp = """
-    <!doctype html>
-    <html>
-    <head>
-        <style>
-            body {
-                overflow-y: scroll;
-                overflow-x: hidden;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                height: 100vh;
-                margin: 0;
-                padding-top: 50px;
-                font-family: Arial, sans-serif;
-            }
-            #form {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                width: 70%;
-                max-width: 400px;
-                border: 1px solid #ccc;
-                padding: 20px;
-                border-radius: 10px;
-                box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-                background-color: #f9f9f9;
-                margin-bottom: 20px;
-            }
-            #userInput, #userInput2 {
-                width: 100%;
-                margin-bottom: 15px;
-                padding: 10px;
-                border: 1px solid #ccc;
-                border-radius: 5px;
-                font-size: 16px;
-                box-sizing: border-box; /* Ensures padding and border are included in width */
-            }
-            #userInput {
-                height: 40px;
-            }
-            #userInput2 {
-                height: 80px;
-            }
-            #subButton {
-                width: 50%;
-                padding: 10px;
-                font-size: 16px;
-                background-color: #007BFF;
-                color: white;
-                border: none;
-                border-radius: 5px;
-                cursor: pointer;
-                transition: background-color 0.3s ease;
-            }
-            #subButton:hover {
-                background-color: #0056b3;
-            }
-            .task-box {
-                width: 70%;
-                max-width: 800px; /* Adjusted to allow more space for content */
-                border: 1px solid #ccc;
-                border-radius: 10px;
-                padding: 10px;
-                margin-bottom: 15px;
-                box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-                background-color: #fff;
-                overflow: hidden; /* Ensures content does not overflow */
-            }
-            .task-container {
-                display: flex;
-                align-items: flex-start; /* Align items to the top */
-            }
-            .task-title-container {
-                flex: 1;
-                display: flex;
-                justify-content: flex-end;
-                margin-right: 10px; /* Space between task and description */
-            }
-            .task-title {
-                font-weight: bold;
-                font-size: 18px;
-                background-color: #f0f0f0;
-                border: 1px solid #ccc;
-                border-radius: 10px;
-                padding: 15px;
-                box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-                text-align: right;
-                word-wrap: break-word; /* Breaks long words to fit within box */
-                max-width: 300px; /* Set a maximum width */
-                overflow-wrap: break-word; /* Breaks long words */
-            }
-            .task-desc-container {
-                flex: 2;
-                display: flex;
-                flex-direction: column;
-            }
-            .task-desc {
-                font-size: 16px;
-                color: #555;
-                background-color: #f0f0f0;
-                border: 1px solid #ccc;
-                border-radius: 10px;
-                padding: 15px;
-                box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-                max-height: 100px; /* Set a maximum height */
-                overflow-y: auto; /* Scrollbar for overflow content */
-                word-wrap: break-word; /* Breaks long words to fit within box */
-            }
-        </style>
-    </head>
-    <body>
-        <form id="form" method="POST">
-            <label for="task">Task:</label>
-            <input type="text" id="userInput" name="userInput" placeholder="Enter your task here">
-            <label for="description">Description:</label>
-            <textarea id="userInput2" name="userInput2" placeholder="Enter the description here"></textarea>
-            <button type="submit" id="subButton">Add</button>
-        </form>
-        <div id="taskList">
-            {% for task, description in zip(listA, listB) %}
-                <div class="task-box">
-                    <div class="task-container">
-                        <div class="task-title-container">
-                            <div class="task-title">{{ task }}</div>
-                        </div>
-                        <div class="task-desc-container">
-                            <div class="task-desc">{{ description }}</div>
-                        </div>
-                    </div>
-                </div>
-            {% endfor %}
-        </div>
-    </body>
-    </html>
-    """
-    return render_template_string(strTemp, listA=listA, listB=listB)
+def add_task():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 403
 
-if __name__ == "__main__":
-    app.jinja_env.globals.update(zip=zip)
-    app.run(debug=True)
+    data = request.get_json()
+    task = data.get('userInput')
+    description = data.get('userInput2')
+    user_id = session['user_id']
+
+    with sqlite3.connect('database.db') as con:
+        cur = con.cursor()
+        cur.execute("INSERT INTO task (title, description, user_id) VALUES (?, ?, ?)", (task, description, user_id))
+        con.commit()
+
+    return jsonify(success=True)
+
+@app.route('/get_task/<int:task_id>')
+def get_task(task_id):
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    user_id = session['user_id']
+    with sqlite3.connect('database.db') as con:
+        cur = con.cursor()
+        cur.execute("SELECT title, description FROM task WHERE id = ? AND user_id = ?", (task_id, user_id))
+        task = cur.fetchone()
+
+    if task:
+        return jsonify({'task': task[0], 'description': task[1]})
+    else:
+        return jsonify({'error': 'Task not found'}), 404
+
+@app.route('/edit_task', methods=['POST'])
+def edit_task():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    data = request.get_json()
+    task_id = int(data.get('index'))
+    task = data.get('task')
+    description = data.get('description')
+    user_id = session['user_id']
+
+    with sqlite3.connect('database.db') as con:
+        cur = con.cursor()
+        cur.execute("UPDATE task SET title = ?, description = ? WHERE id = ? AND user_id = ?", 
+                    (task, description, task_id, user_id))
+        con.commit()
+
+    return jsonify({'success': True})
+
+@app.route('/delete_task/<int:task_id>', methods=['POST'])
+def delete_task(task_id):
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    user_id = session['user_id']
+    with sqlite3.connect('database.db') as con:
+        cur = con.cursor()
+        cur.execute("DELETE FROM task WHERE id = ? AND user_id = ?", (task_id, user_id))
+        con.commit()
+
+    return jsonify({'success': True})
+
+if __name__ == '__main__':
+    IP =get_ip()
+    # The data you want to encode in the QR code
+    data = f"http://{IP}:5000"
+
+# Create a QR code object
+    qr = qrcode.QRCode(
+        version=1,  # controls the size of the QR code
+        error_correction=qrcode.constants.ERROR_CORRECT_L,  # error correction level
+        box_size=4,  # size of each box in pixels
+        border=4,  # thickness of the border
+        )
+
+# Add data to the QR code
+    qr.add_data(data)
+    qr.make(fit=True)
+
+# Print the QR code in ASCII format
+    qr.print_tty()
+    app.run(host='0.0.0.0', port=5000, debug=True)
