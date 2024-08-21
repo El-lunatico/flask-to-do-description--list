@@ -109,5 +109,3 @@ This update introduces the following new features:
 - **Missing Template**: Verify `text_list.html` is correctly placed in the `templates` directory.
 
 ---
-
-This README provides a comprehensive guide to understanding, setting up, and using the updated Flask Task Management Application. For further assistance, refer to Flask and SQLite documentation.
